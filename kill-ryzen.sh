@@ -5,9 +5,11 @@ USE_RAMDISK=true
 CLEAN_ON_EXIT=false
 NPROC=$1
 TPROC=$2
+GCC_VERSION=$3
 
 [ -n "$NPROC" ] || NPROC=$(nproc)
 [ -n "$TPROC" ] || TPROC=1
+[ -n "$GCC_VERSION" ] || GCC_VERSION="7.5.0"
 
 cleanup() {
   sudo rm -rf /mnt/ramdisk/*
@@ -42,13 +44,13 @@ if $USE_RAMDISK; then
 fi
 
 echo "Download GCC sources"
-wget ftp://ftp.fu-berlin.de/unix/languages/gcc/releases/gcc-7.1.0/gcc-7.1.0.tar.bz2 || exit 1
+wget ftp://ftp.fu-berlin.de/unix/languages/gcc/releases/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.gz || exit 1
 
 echo "Extract GCC sources"
-tar xf gcc-7.1.0.tar.bz2 || exit 1
+tar xf gcc-${GCC_VERSION}.tar.gz || exit 1
 
 echo "Download prerequisites"
-(cd gcc-7.1.0/ && ./contrib/download_prerequisites)
+(cd gcc-${GCC_VERSION}/ && ./contrib/download_prerequisites)
 
 [ -d 'buildloop.d' ] && rm -r 'buildloop.d'
 mkdir -p buildloop.d || exit 1
@@ -70,7 +72,7 @@ echo "Using ${NPROC} parallel processes"
 
 START=$(date +%s)
 for ((I=0;$I<$NPROC;I++)); do
-  (./buildloop.sh "loop-$I" "$TPROC" || echo "TIME TO FAIL: $(($(date +%s)-${START})) s") | sed "s/^/\[loop-${I}\] /" &
+  (./buildloop.sh "loop-$I" "$TPROC" "$GCC_VERSION" || echo "TIME TO FAIL: $(($(date +%s)-${START})) s") | sed "s/^/\[loop-${I}\] /" &
   sleep 1
 done
 
